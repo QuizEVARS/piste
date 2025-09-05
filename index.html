@@ -26,7 +26,7 @@
         linear-gradient(180deg, var(--bg2), var(--bg));
       min-height:100%;
       overflow-y:overlay;
-      padding-bottom: env(safe-area-inset-bottom, 0); /* safe area iOS */
+      padding-bottom: env(safe-area-inset-bottom, 0);
     }
     @keyframes floatBG { from{background-position:0 0, 0 0, 0 0} to{background-position:20px 10px, -10px 15px, 0 0} }
     @media (prefers-reduced-motion: no-preference){
@@ -130,11 +130,9 @@
     #titre-enigme{font-size:clamp(18px,4.8vw,24px);margin:0}
     #riddle{font-size:clamp(16px,4.4vw,18px);line-height:1.6;margin-top:16px}
 
-    /* Liens */
     a{color:color-mix(in oklab, var(--accent) 85%, white 15%); text-decoration:none}
     a:hover{text-decoration:underline}
 
-    /* Bloc "suivant" + écran final */
     #next-clue{
       background:linear-gradient(180deg, rgba(34,197,94,.10), rgba(34,197,94,.06));
       border-color:rgba(34,197,94,.35);
@@ -142,14 +140,12 @@
     #finish-screen h2{ font-size:clamp(22px,5vw,28px) }
     #chrono-pill, #best-pill{ border-color:rgba(255,255,255,.14) }
 
-    /* Image plan */
     aside figure img{
       width:100%;max-height:260px;object-fit:cover;border-radius:14px;opacity:.92;
       border:1px solid var(--border); box-shadow:0 6px 18px rgba(0,0,0,.3)
     }
     aside figcaption{ color:var(--muted) }
 
-    /* Accessibilité + tactile */
     :focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent) }
     button, input{ touch-action:manipulation }
 
@@ -177,7 +173,7 @@
       border:1px solid rgba(255,255,255,.08);
       border-radius:12px;
       box-shadow:0 8px 24px rgba(0,0,0,.35);
-      transform: translateZ(0); /* iOS */
+      transform: translateZ(0);
     }
     #actionbar button{ flex:1; min-width:0 }
     #game-grid{ scroll-margin-top: 8px }
@@ -187,13 +183,20 @@
     #sidebar-list li{ padding:10px !important }
     #sidebar-list .pill{ font-size:11px; padding:5px 8px }
 
+    /* Bouton reset discret (lien) dans le pied de page */
+    .link-reset{
+      background:transparent; border:none; color:var(--muted);
+      padding:6px 8px; border-radius:8px; cursor:pointer;
+      text-decoration:underline;
+    }
+    .link-reset:hover{ color:var(--text); background:rgba(255,255,255,.06) }
+    .link-reset:focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in oklab, var(--ring) 45%, transparent) }
+
     /* Layout & paddings resserrés sur petits écrans */
     @media (max-width:820px){
       .container{ padding:16px 12px }
       .card{ padding:16px; border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.28) }
       header{ gap:10px; margin-bottom:10px }
-      header>div{ width:100%; display:flex; gap:8px }
-      header button{ flex:1 }
       #riddle{ margin-top:12px }
       label{ margin:12px 0 6px }
       .progress{ height:10px }
@@ -205,14 +208,11 @@
 <body>
   <div class="container">
     <header>
-      <h1>Jeu de piste du lycée <span class="badge">Femmes célèbres</span></h1>
-      <div style="display:flex;gap:8px">
-        <button id="btn-reset" class="secondary" title="Réinitialiser la progression">Réinitialiser</button>
-        <button id="btn-reshuffle" class="secondary" title="Nouveau tirage aléatoire">Nouveau tirage</button>
-      </div>
+      <h1>Jeu de piste <span class="badge">Femmes célèbres</span></h1>
+      <!-- Boutons en-tête supprimés pour ne pas impacter le titre -->
     </header>
 
-    <p class="muted">Lis l’énigme → rends-toi dans la <strong>salle</strong> → saisis le <strong>code</strong> affiché. Si le code correspond bien à la femme visée, tu passes à la suite. Le parcours choisit <span id="target-count">7</span> énigmes <strong>au hasard</strong> sur une base de 20.</p>
+    <p class="muted">Lis l’énigme → rends-toi devant la <strong>salle</strong> → saisis le <strong>code</strong> affiché. Si le code correspond bien à la femme visée, tu passes à la suite. Le parcours choisit <span id="target-count">7</span> énigmes <strong>au hasard</strong> sur une base de 20.</p>
 
     <div class="grid" id="game-grid">
       <!-- Colonne principale: énigme en cours -->
@@ -269,8 +269,10 @@
       </div>
     </section>
 
-    <div class="footer muted">
+    <div class="footer muted" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <span id="progress-info">Progression : 0%</span>
+      <!-- bouton reset discret, éloigné du titre -->
+      <button id="btn-reset" class="link-reset" title="Réinitialiser la progression">↺ Réinitialiser</button>
     </div>
   </div>
 
@@ -282,94 +284,94 @@
     const SETTINGS = {
       title: "Jeu de piste — Femmes célèbres",
       storageKey: "lycee-piste-femmes-v3",
-      roundsTarget: 7, // ← nombre d'énigmes à faire
+      roundsTarget: 7,
     };
 
     // Indice : délai de déblocage (5 minutes)
-    const HINT_DELAY_MS = 5 * 60 * 1000; // 300000 ms
+    const HINT_DELAY_MS = 5 * 60 * 1000;
     let hintTimer = null;
-    let hintTicker = null; // setInterval pour le compte à rebours
+    let hintTicker = null;
 
     const POOL = [
       { name:"Marie Curie", room:"425", code:"RADIO1903",
         riddle:"Première femme à recevoir un prix Nobel, elle a découvert le radium et le polonium.",
-        hint:"Sciences : radioactivité, deux Prix Nobel (Physique 1903, Chimie 1911). Cherche le labo de sciences." },
+        hint:"Étage 4 — labo de sciences. Radioactivité, deux Prix Nobel (1903/1911)." },
 
       { name:"Rosalind Franklin", room:"502", code:"ADN1952",
         riddle:"Ses clichés aux rayons X ont rendu visible la double hélice de l’ADN.",
-        hint:"SVT/microscopes : « Photo 51 », diffraction RX, structure de l’ADN (1952)." },
+        hint:"Étage 5 — SVT/microscopes. « Photo 51 » et structure de l’ADN (1952)." },
 
       { name:"Ada Lovelace", room:"501", code:"CODE1843",
         riddle:"Au XIXᵉ siècle, elle a imaginé le premier algorithme pour la machine analytique.",
-        hint:"Informatique : algorithme, Babbage, 1843. Suis le son des claviers." },
+        hint:"Étage 5 — informatique. Algorithme, Babbage, 1843." },
 
       { name:"Katherine Johnson", room:"320B", code:"LUNE1969",
         riddle:"Mathématicienne de la NASA, ses calculs ont permis la réussite d’Apollo.",
-        hint:"Maths/physique : trajectoires, Lune, 1969. Panneaux « Espace » en déco ?" },
+        hint:"Étage 3 — maths/physique. Trajectoires, Lune, 1969." },
 
       { name:"Emmy Noether", room:"321", code:"THEOREME1918",
         riddle:"Son théorème relie symétries et lois de conservation, fondamental en physique.",
-        hint:"Maths : « symétrie → conservation » (1918). Regarde le coin des équations." },
+        hint:"Étage 3 — maths. Symétries ⇒ conservations (1918)." },
 
       { name:"Maria Montessori", room:"202", code:"ECOLE1907",
         riddle:"Pionnière d’une pédagogie centrée sur l’autonomie et le matériel sensoriel.",
-        hint:"Documentation/étude : pédagogie active, 1907. Ambiance calme = bon signe." },
+        hint:"Étage 2 — doc/étude. Pédagogie active, autonomie (1907)." },
 
       { name:"Simone Veil", room:"203", code:"LOI1975",
         riddle:"Rescapée des camps, ministre de la Santé, elle fait voter une loi historique.",
-        hint:"EMC/Histoire : loi de 1975, hémicycle, santé. Affiches citoyenneté ?" },
+        hint:"Étage 2 — EMC/Histoire. Loi de 1975, droits des femmes." },
 
       { name:"Olympe de Gouges", room:"306", code:"DROITS1791",
         riddle:"Autrice de la Déclaration des droits de la femme et de la citoyenne.",
-        hint:"Révolution française : 1791, droits, club politique. Pistes vers Histoire." },
+        hint:"Étage 3 — Histoire (Révolution). Déclaration, 1791." },
 
       { name:"Juana Inés de la Cruz", room:"111", code:"SORJUANA1691",
         riddle:"Religieuse et écrivaine mexicaine du XVIIᵉ siècle, défenseuse du savoir des femmes.",
-        hint:"Lettres/espagnol : « Respuesta a Sor Filotea » (1691), poésie baroque, couvent du Mexique." },
+        hint:"Étage 1 — lettres/espagnol. « Respuesta a Sor Filotea » (1691)." },
 
       { name:"Billie Jean King", room:"210A", code:"BATTLE1973",
         riddle:"Championne de tennis et militante, elle remporte la « Battle of the Sexes ».",
-        hint:"EPS/esprit sportif : tennis, égalité femmes-hommes, 1973. Pense à un court… même imaginaire !" },
+        hint:"Étage 2 — EPS/sport. Tennis, égalité, 1973." },
 
       { name:"Fatima Al-Fihriya", room:"102A", code:"UNIVERSITE859",
         riddle:"Bienfaitrice de Fès au IXᵉ siècle, elle fonde un centre d’étude devenu université.",
-        hint:"Éducation/bibliothèque : al-Qarawiyyin (vers 859), étude, savoir. Cherche rayonnages et livres." },
+        hint:"Étage 1 — éducation/bibliothèque. al-Qarawiyyin (~859)." },
 
       { name:"Dorothy Crawford", room:"420", code:"VIRUS2002",
         riddle:"Virologue et vulgarisatrice, elle raconte comment vivent et se propagent les virus.",
-        hint:"SVT/biologie : microbes, épidémies, immunité. Pistes : « The Invisible Enemy », virologie (~2002)." },
+        hint:"Étage 4 — SVT/biologie. Virus, épidémies, vulgarisation." },
 
       { name:"Émilie du Châtelet", room:"504", code:"NEWTON1749",
         riddle:"Savante des Lumières, traductrice et commentatrice des Principia.",
-        hint:"Philo/sciences : Newton, énergie, 1749. Cherche affiches des Lumières." },
+        hint:"Étage 5 — philo/sciences. Newton, Principia (1749)." },
 
       { name:"Anne Frank", room:"304", code:"JOURNAL1947",
         riddle:"Adolescente juive cachée à Amsterdam, son journal devient un témoignage mondial.",
-        hint:"Lettres/Histoire : Journal, 1942-44, publication 1947. Référence à la Seconde Guerre mondiale." },
+        hint:"Étage 3 — lettres/histoire. Journal (1947), Seconde Guerre mondiale." },
 
       { name:"Jane Austen", room:"313", code:"PRIDE1813",
         riddle:"Romancière anglaise au regard fin sur la société de son temps.",
-        hint:"Littérature anglaise : « Pride and Prejudice » (1813), bals, mœurs Regency." },
+        hint:"Étage 3 — littérature anglaise. « Pride and Prejudice » (1813)." },
 
       { name:"Toni Morrison", room:"Amphithéâtre", code:"NOBEL1993",
         riddle:"Première autrice afro-américaine à recevoir le Prix Nobel de littérature.",
-        hint:"Analyse de textes : « Beloved », mémoire et identité, Nobel 1993." },
+        hint:"Salle spéciale — grand amphithéâtre (pas de numéro). « Beloved », Nobel 1993." },
 
       { name:"Pauline Léon", room:"308", code:"CLUB1793",
         riddle:"Révolutionnaire, elle fonde le club des citoyennes républicaines révolutionnaires.",
-        hint:"Histoire : clubs, 1793, mobilisation féminine. Cherche cartes et chronologies." },
+        hint:"Étage 3 — Histoire (Révolution). Clubs féminins, 1793." },
 
       { name:"Charlotte Delbo", room:"109", code:"RESIST1946",
         riddle:"Résistante déportée, elle témoigne du camp dans ses œuvres.",
-        hint:"Théâtre/lettres : témoignage, déportation, après-guerre. Mots-clés : mémoire, scène." },
+        hint:"Étage 1 — théâtre/lettres. Témoignage, mémoire." },
 
       { name:"George Sand", room:"101A", code:"INDIANA1832",
         riddle:"Plume libre du XIXᵉ siècle ; « Indiana » marque ses débuts littéraires.",
-        hint:"Français : pseudonyme masculin, 1832, romantisme. Rayonnage « XIXᵉ »." },
+        hint:"Étage 1 — français. Pseudonyme masculin, 1832 (« Indiana »)." },
 
       { name:"Teresa Perales", room:"103", code:"NATATION2000",
         riddle:"Nageuse espagnole, multi-médaillée paralympique sur plusieurs Jeux.",
-        hint:"Sport/natation : Sydney 2000 → série de médailles, paralympique. Cherche affiches de piscine." }
+        hint:"Étage 1 — sport. Natation paralympique, depuis Sydney 2000." }
     ];
 
     // ==============================
@@ -390,15 +392,6 @@
       btnValidate: document.getElementById('btn-validate'),
       btnHint: document.getElementById('btn-hint'),
       btnReset: document.getElementById('btn-reset'),
-      btnReshuffle: document.getElementById('btn-reshuffle'),
-      targetCount: document.getElementById('target-count'),
-      sidebarTarget: document.getElementById('sidebar-target-count'),
-      finishScreen: document.getElementById('finish-screen'),
-      playSection: document.getElementById('play-section'),
-      gameGrid: document.getElementById('game-grid'),
-      chronoPill: document.getElementById('chrono-pill'),
-      bestPill: document.getElementById('best-pill'),
-      finishDetail: document.getElementById('finish-detail'),
       btnReplay: document.getElementById('btn-replay'),
       btnReset2: document.getElementById('btn-reset2'),
     };
@@ -462,12 +455,11 @@
       const best = Number(localStorage.getItem(keyBest) || elapsed);
 
       ui.chronoPill.textContent = '⏱️ Temps : ' + msToClock(elapsed);
-      if(best){ ui.bestPill.style.display = 'inline-block'; ui.bestPill.textContent = '🏁 Record : ' + msToClock(best); }
-      ui.finishDetail.textContent = `Tu as résolu ${state.seq.length} énigmes, Bravo !`;
+      if(best){ document.getElementById('best-pill').style.display = 'inline-block'; document.getElementById('best-pill').textContent = '🏁 Record : ' + msToClock(best); }
+      document.getElementById('finish-detail').textContent = `Tu as résolu ${state.seq.length} énigmes, Bravo !`;
 
-      // Bascule d'écran
       ui.gameGrid.style.display = 'none';
-      ui.finishScreen.style.display = 'flex';
+      document.getElementById('finish-screen').style.display = 'flex';
     }
 
     // ====== Gestion Indice : verrou + compte à rebours ======
@@ -546,7 +538,7 @@
 
     function render(){
       document.title = SETTINGS.title;
-      ui.targetCount.textContent = SETTINGS.roundsTarget;
+      document.getElementById('target-count').textContent = SETTINGS.roundsTarget;
 
       const total = state.seq.length;
       if(state.i >= total){
@@ -560,7 +552,6 @@
       }
 
       const current = POOL[state.seq[state.i]];
-      // (re)lance le chrono de l’énigme courante
       state.stepStartedAt = Date.now();
       saveState(state);
 
@@ -569,7 +560,6 @@
       ui.code.value = '';
       ui.code.disabled = false; ui.btnValidate.disabled = false;
 
-      // Indice verrouillé puis déverrouillé après 5 minutes avec compte à rebours
       disableHint(HINT_DELAY_MS);
       setupHintLock();
 
@@ -620,14 +610,13 @@
 
       state = createRun();
       saveState(state);
-      ui.finishScreen.style.display='none';
-      ui.gameGrid.style.display='grid';
+      document.getElementById('finish-screen').style.display='none';
+      document.getElementById('game-grid').style.display='grid';
       render();
     }
 
+    // Reset (lien discret en pied de page) + boutons écran final
     ui.btnReset.addEventListener('click', ()=>{ if(confirm('Réinitialiser la progression du jeu ?')) resetAndNewRun(); });
-    ui.btnReshuffle.addEventListener('click', ()=>{ if(confirm('Nouveau tirage aléatoire ?')) resetAndNewRun(); });
-
     ui.btnReplay.addEventListener('click', ()=>{ resetAndNewRun(); });
     ui.btnReset2.addEventListener('click', ()=>{ resetAndNewRun(); });
 
