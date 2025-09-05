@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)">
+  <title>Jeu de piste du lycée — Femmes célèbres</title>
+
+  <!-- Thème modernisé + adaptations mobile (fonctionnalités inchangées) -->
+  <style>
+    :root{
+      --bg:#0b1020; --bg2:#111a33; --card:#0f1426;
+      --muted:#97a3ba; --text:#eef3ff;
+      --accent:#5ad0ff; --accent2:#8aa4ff; --ring:#94f0ff;
+      --good:#22c55e; --bad:#ef4444; --warn:#f59e0b;
+      --border:rgba(255,255,255,.10); --glass:rgba(255,255,255,.06);
+      --shadow:0 10px 30px rgba(0,0,0,.35); --radius:18px;
+    }
+    html,body{height:100%} *{box-sizing:border-box}
+    body{
+      margin:0; color:var(--text);
+      font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans";
+      background:
+        radial-gradient(1200px 800px at 20% -10%, #1a2347 0%, var(--bg) 60%),
+        radial-gradient(900px 700px at 120% 0%, #14224a 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg));
+      min-height:100%;
+      overflow-y:overlay;
+      padding-bottom: env(safe-area-inset-bottom, 0); /* safe area iOS */
+    }
+    @keyframes floatBG { from{background-position:0 0, 0 0, 0 0} to{background-position:20px 10px, -10px 15px, 0 0} }
+    @media (prefers-reduced-motion: no-preference){
+      body{ animation: floatBG 18s ease-in-out infinite alternate }
+    }
+
+    .container{max-width:1040px;margin:0 auto;padding:28px 20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    h1{font-size:clamp(24px,5vw,40px);margin:0;letter-spacing:.2px;line-height:1.1}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#071019;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      padding:6px 10px;border-radius:999px;font-weight:800;
+      box-shadow:0 4px 14px rgba(90,208,255,.35); position:relative; isolation:isolate;
+    }
+    .badge:after{
+      content:""; position:absolute; inset:0; border-radius:999px;
+      background:linear-gradient(90deg, rgba(255,255,255,.25), rgba(255,255,255,0));
+      mix-blend-mode:overlay; opacity:.5; pointer-events:none;
+    }
+
+    .card{
+      background:linear-gradient(180deg, var(--glass), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:22px;
+      backdrop-filter:saturate(130%) blur(8px);
+    }
+
+    .grid{display:grid; gap:18px}
+    @media (min-width:820px){ .grid{ grid-template-columns: 2fr 1fr } }
+
+    label{display:block;font-weight:700;margin:14px 0 6px;letter-spacing:.2px}
+
+    input[type="text"]{
+      width:100%;padding:16px 16px;border-radius:14px; min-height:48px;
+      border:1px solid var(--border);
+      background:rgba(7,12,25,.7);
+      color:var(--text); outline:none; transition:.25s ease;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+      -webkit-tap-highlight-color: transparent;
+    }
+    input::placeholder{color:#8ea0bd}
+    input[type="text"]:focus{
+      border-color:transparent;
+      box-shadow:0 0 0 4px color-mix(in oklab, var(--ring) 40%, transparent),
+                 inset 0 0 0 1px rgba(255,255,255,.03);
+      background:rgba(7,12,25,.85);
+    }
+
+    button{
+      appearance:none;border:none;cursor:pointer;font-weight:800;
+      padding:14px 18px;border-radius:12px;color:#08111b; min-height:48px;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      box-shadow:0 8px 18px rgba(90,208,255,.35);
+      transition:transform .12s ease, box-shadow .2s ease, opacity .2s ease;
+      letter-spacing:.2px; -webkit-tap-highlight-color: transparent;
+    }
+    button:hover{ transform:translateY(-1px); box-shadow:0 12px 26px rgba(90,208,255,.42) }
+    button:active{ transform:translateY(0) scale(.98) }
+    button.secondary{
+      background:rgba(7,12,25,.7); color:var(--text);
+      border:1px solid var(--border);
+      box-shadow:0 6px 16px rgba(0,0,0,.25);
+    }
+    button.secondary:hover{ filter:brightness(1.04) }
+    button.disabled, button:disabled{ opacity:.6; cursor:not-allowed; filter:saturate(.7) }
+
+    .muted{color:var(--muted)}
+    .success{color:var(--good)} .error{color:var(--bad)} .warn{color:var(--warn)}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;background:rgba(7,12,25,.7);
+      border:1px solid var(--border);font-size:12px;color:var(--muted)
+    }
+
+    .progress{
+      height:12px;background:rgba(7,12,25,.6);
+      border-radius:999px;overflow:hidden;border:1px solid var(--border);
+      box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
+    }
+    .progress>div{
+      height:100%;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      width:0%;
+      transition:width .35s ease;
+    }
+
+    .kbd{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;background:rgba(7,12,25,.7);
+      border:1px solid var(--border); border-bottom-width:3px;
+      padding:2px 6px;border-radius:6px
+    }
+
+    .footer{opacity:.85;font-size:12px;margin-top:28px}
+    .center{display:flex;align-items:center;justify-content:center;text-align:center}
+
+    #titre-enigme{font-size:clamp(18px,4.8vw,24px);margin:0}
+    #riddle{font-size:clamp(16px,4.4vw,18px);line-height:1.6;margin-top:16px}
+
+    /* Liens */
+    a{color:color-mix(in oklab, var(--accent) 85%, white 15%); text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* Bloc "suivant" + écran final */
+    #next-clue{
+      background:linear-gradient(180deg, rgba(34,197,94,.10), rgba(34,197,94,.06));
+      border-color:rgba(34,197,94,.35);
+    }
+    #finish-screen h2{ font-size:clamp(22px,5vw,28px) }
+    #chrono-pill, #best-pill{ border-color:rgba(255,255,255,.14) }
+
+    /* Image plan */
+    aside figure img{
+      width:100%;max-height:260px;object-fit:cover;border-radius:14px;opacity:.92;
+      border:1px solid var(--border); box-shadow:0 6px 18px rgba(0,0,0,.3)
+    }
+    aside figcaption{ color:var(--muted) }
+
+    /* Accessibilité + tactile */
+    :focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent) }
+    button, input{ touch-action:manipulation }
+
+    /* ======= Optimisations Mobile ======= */
+    .play-head{
+      position: sticky;
+      top: calc(env(safe-area-inset-top, 0) + 8px);
+      z-index: 2;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      background: linear-gradient(180deg, rgba(15,20,38,.95), rgba(15,20,38,.65));
+      backdrop-filter: blur(6px) saturate(120%);
+      border-bottom:1px solid rgba(255,255,255,.06);
+      border-top-left-radius: 12px; border-top-right-radius: 12px;
+    }
+    #actionbar{
+      position: sticky;
+      bottom: calc(env(safe-area-inset-bottom, 0) + 8px);
+      z-index: 3;
+      display:flex;gap:8px;align-items:center;flex-wrap:nowrap;
+      padding:8px;
+      margin-top:12px;
+      background: linear-gradient(180deg, rgba(11,16,32,.75), rgba(11,16,32,.9));
+      backdrop-filter: blur(8px) saturate(140%);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      box-shadow:0 8px 24px rgba(0,0,0,.35);
+      transform: translateZ(0); /* iOS */
+    }
+    #actionbar button{ flex:1; min-width:0 }
+    #game-grid{ scroll-margin-top: 8px }
+
+    /* Sidebar plus compact sur mobile */
+    #sidebar-card .card, #sidebar-card li.card{ box-shadow:none }
+    #sidebar-list li{ padding:10px !important }
+    #sidebar-list .pill{ font-size:11px; padding:5px 8px }
+
+    /* Layout & paddings resserrés sur petits écrans */
+    @media (max-width:820px){
+      .container{ padding:16px 12px }
+      .card{ padding:16px; border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.28) }
+      header{ gap:10px; margin-bottom:10px }
+      header>div{ width:100%; display:flex; gap:8px }
+      header button{ flex:1 }
+      #riddle{ margin-top:12px }
+      label{ margin:12px 0 6px }
+      .progress{ height:10px }
+      .pill{ font-size:11px }
+      aside figure img{ max-height:200px }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Jeu de piste du lycée <span class="badge">Femmes célèbres</span></h1>
+      <div style="display:flex;gap:8px">
+        <button id="btn-reset" class="secondary" title="Réinitialiser la progression">Réinitialiser</button>
+        <button id="btn-reshuffle" class="secondary" title="Nouveau tirage aléatoire">Nouveau tirage</button>
+      </div>
+    </header>
+
+    <p class="muted">Lis l’énigme → rends-toi dans la <strong>salle</strong> → saisis le <strong>code</strong> affiché. Si le code correspond bien à la femme visée, tu passes à la suite. Le parcours choisit <span id="target-count">7</span> énigmes <strong>au hasard</strong> sur une base de 20.</p>
+
+    <div class="grid" id="game-grid">
+      <!-- Colonne principale: énigme en cours -->
+      <section class="card" aria-labelledby="titre-enigme" id="play-section">
+        <div class="play-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <h2 id="titre-enigme" style="margin:0;font-size:22px">Énigme <span id="step-num">1</span> / <span id="step-total">?</span></h2>
+          <span class="pill" id="theme-label">En quête…</span>
+        </div>
+
+        <div class="progress" aria-hidden="true" title="Progression">
+          <div id="progressbar"></div>
+        </div>
+
+        <p id="riddle"></p>
+
+        <label for="code">Code trouvé dans la salle</label>
+        <input id="code" type="text" placeholder="Ex : KA-204, 7F3X, 1791…" autocomplete="off" />
+
+        <!-- Barre d’actions collante (aucun changement de logique) -->
+        <div id="actionbar">
+          <button id="btn-validate">Valider</button>
+          <button id="btn-hint" class="secondary disabled" title="Indice disponible après 5 min">Indice (05:00)</button>
+        </div>
+
+        <p id="feedback" class="muted" style="min-height:24px;margin-top:6px"></p>
+
+        <div id="next-clue" class="card" style="display:none;margin-top:12px;background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.35)">
+          <strong class="success">Bravo !</strong>
+          <p style="margin:6px 0 0" id="next-text">Passe à l’énigme suivante.</p>
+        </div>
+      </section>
+
+      <!-- Colonne secondaire: correspondances (sans descriptions) -->
+      <aside class="card" id="sidebar-card">
+        <h3 style="margin-top:0">Correspondances</h3>
+        <div id="sidebar-list" style="margin:10px 0 0"></div>
+
+        <figure style="margin:16px 0 0">
+          <img src="plan.png" alt="Plan du lycée (remplacez ce fichier par votre plan)" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;opacity:.85" onerror="this.style.display='none'">
+          <figcaption class="muted" style="margin-top:6px">Astuce : ajoutez un plan <code>plan.png</code>.</figcaption>
+        </figure>
+      </aside>
+    </div>
+
+    <!-- Écran final -->
+    <section id="finish-screen" class="card center" style="display:none;flex-direction:column;gap:8px;min-height:280px">
+      <h2 style="margin:0">🎉 Parcours terminé !</h2>
+      <p class="muted" id="finish-detail">Bravo !</p>
+      <div class="pill" id="chrono-pill">⏱️ Temps : 00:00</div>
+      <div class="pill" id="best-pill" style="display:none">🏁 Record : 00:00</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="btn-replay">Rejouer (nouveau tirage)</button>
+        <button id="btn-reset2" class="secondary">Réinitialiser</button>
+      </div>
+    </section>
+
+    <div class="footer muted">
+      <span id="progress-info">Progression : 0%</span>
+    </div>
+  </div>
+
+  <script>
+    // ==============================
+    // ========= CONFIGURATION ======
+    // ==============================
+
+    const SETTINGS = {
+      title: "Jeu de piste — Femmes célèbres",
+      storageKey: "lycee-piste-femmes-v3",
+      roundsTarget: 7, // ← nombre d'énigmes à faire
+    };
+
+    // Indice : délai de déblocage (5 minutes)
+    const HINT_DELAY_MS = 5 * 60 * 1000; // 300000 ms
+    let hintTimer = null;
+    let hintTicker = null; // setInterval pour le compte à rebours
+
+    const POOL = [
+      { name:"Marie Curie", room:"425", code:"RADIO1903",
+        riddle:"Première femme à recevoir un prix Nobel, elle a découvert le radium et le polonium.",
+        hint:"Sciences : radioactivité, deux Prix Nobel (Physique 1903, Chimie 1911). Cherche le labo de sciences." },
+
+      { name:"Rosalind Franklin", room:"502", code:"ADN1952",
+        riddle:"Ses clichés aux rayons X ont rendu visible la double hélice de l’ADN.",
+        hint:"SVT/microscopes : « Photo 51 », diffraction RX, structure de l’ADN (1952)." },
+
+      { name:"Ada Lovelace", room:"501", code:"CODE1843",
+        riddle:"Au XIXᵉ siècle, elle a imaginé le premier algorithme pour la machine analytique.",
+        hint:"Informatique : algorithme, Babbage, 1843. Suis le son des claviers." },
+
+      { name:"Katherine Johnson", room:"320B", code:"LUNE1969",
+        riddle:"Mathématicienne de la NASA, ses calculs ont permis la réussite d’Apollo.",
+        hint:"Maths/physique : trajectoires, Lune, 1969. Panneaux « Espace » en déco ?" },
+
+      { name:"Emmy Noether", room:"321", code:"THEOREME1918",
+        riddle:"Son théorème relie symétries et lois de conservation, fondamental en physique.",
+        hint:"Maths : « symétrie → conservation » (1918). Regarde le coin des équations." },
+
+      { name:"Maria Montessori", room:"202", code:"ECOLE1907",
+        riddle:"Pionnière d’une pédagogie centrée sur l’autonomie et le matériel sensoriel.",
+        hint:"Documentation/étude : pédagogie active, 1907. Ambiance calme = bon signe." },
+
+      { name:"Simone Veil", room:"203", code:"LOI1975",
+        riddle:"Rescapée des camps, ministre de la Santé, elle fait voter une loi historique.",
+        hint:"EMC/Histoire : loi de 1975, hémicycle, santé. Affiches citoyenneté ?" },
+
+      { name:"Olympe de Gouges", room:"306", code:"DROITS1791",
+        riddle:"Autrice de la Déclaration des droits de la femme et de la citoyenne.",
+        hint:"Révolution française : 1791, droits, club politique. Pistes vers Histoire." },
+
+      { name:"Juana Inés de la Cruz", room:"111", code:"SORJUANA1691",
+        riddle:"Religieuse et écrivaine mexicaine du XVIIᵉ siècle, défenseuse du savoir des femmes.",
+        hint:"Lettres/espagnol : « Respuesta a Sor Filotea » (1691), poésie baroque, couvent du Mexique." },
+
+      { name:"Billie Jean King", room:"210A", code:"BATTLE1973",
+        riddle:"Championne de tennis et militante, elle remporte la « Battle of the Sexes ».",
+        hint:"EPS/esprit sportif : tennis, égalité femmes-hommes, 1973. Pense à un court… même imaginaire !" },
+
+      { name:"Fatima Al-Fihriya", room:"102A", code:"UNIVERSITE859",
+        riddle:"Bienfaitrice de Fès au IXᵉ siècle, elle fonde un centre d’étude devenu université.",
+        hint:"Éducation/bibliothèque : al-Qarawiyyin (vers 859), étude, savoir. Cherche rayonnages et livres." },
+
+      { name:"Dorothy Crawford", room:"420", code:"VIRUS2002",
+        riddle:"Virologue et vulgarisatrice, elle raconte comment vivent et se propagent les virus.",
+        hint:"SVT/biologie : microbes, épidémies, immunité. Pistes : « The Invisible Enemy », virologie (~2002)." },
+
+      { name:"Émilie du Châtelet", room:"504", code:"NEWTON1749",
+        riddle:"Savante des Lumières, traductrice et commentatrice des Principia.",
+        hint:"Philo/sciences : Newton, énergie, 1749. Cherche affiches des Lumières." },
+
+      { name:"Anne Frank", room:"304", code:"JOURNAL1947",
+        riddle:"Adolescente juive cachée à Amsterdam, son journal devient un témoignage mondial.",
+        hint:"Lettres/Histoire : Journal, 1942-44, publication 1947. Référence à la Seconde Guerre mondiale." },
+
+      { name:"Jane Austen", room:"313", code:"PRIDE1813",
+        riddle:"Romancière anglaise au regard fin sur la société de son temps.",
+        hint:"Littérature anglaise : « Pride and Prejudice » (1813), bals, mœurs Regency." },
+
+      { name:"Toni Morrison", room:"Amphithéâtre", code:"NOBEL1993",
+        riddle:"Première autrice afro-américaine à recevoir le Prix Nobel de littérature.",
+        hint:"Analyse de textes : « Beloved », mémoire et identité, Nobel 1993." },
+
+      { name:"Pauline Léon", room:"308", code:"CLUB1793",
+        riddle:"Révolutionnaire, elle fonde le club des citoyennes républicaines révolutionnaires.",
+        hint:"Histoire : clubs, 1793, mobilisation féminine. Cherche cartes et chronologies." },
+
+      { name:"Charlotte Delbo", room:"109", code:"RESIST1946",
+        riddle:"Résistante déportée, elle témoigne du camp dans ses œuvres.",
+        hint:"Théâtre/lettres : témoignage, déportation, après-guerre. Mots-clés : mémoire, scène." },
+
+      { name:"George Sand", room:"101A", code:"INDIANA1832",
+        riddle:"Plume libre du XIXᵉ siècle ; « Indiana » marque ses débuts littéraires.",
+        hint:"Français : pseudonyme masculin, 1832, romantisme. Rayonnage « XIXᵉ »." },
+
+      { name:"Teresa Perales", room:"103", code:"NATATION2000",
+        riddle:"Nageuse espagnole, multi-médaillée paralympique sur plusieurs Jeux.",
+        hint:"Sport/natation : Sydney 2000 → série de médailles, paralympique. Cherche affiches de piscine." }
+    ];
+
+    // ==============================
+    // ======== LOGIQUE JEU =========
+    // ==============================
+
+    const ui = {
+      stepNum: document.getElementById('step-num'),
+      stepTotal: document.getElementById('step-total'),
+      themeLabel: document.getElementById('theme-label'),
+      riddle: document.getElementById('riddle'),
+      code: document.getElementById('code'),
+      feedback: document.getElementById('feedback'),
+      nextClue: document.getElementById('next-clue'),
+      nextText: document.getElementById('next-text'),
+      progressbar: document.getElementById('progressbar'),
+      progressInfo: document.getElementById('progress-info'),
+      btnValidate: document.getElementById('btn-validate'),
+      btnHint: document.getElementById('btn-hint'),
+      btnReset: document.getElementById('btn-reset'),
+      btnReshuffle: document.getElementById('btn-reshuffle'),
+      targetCount: document.getElementById('target-count'),
+      sidebarTarget: document.getElementById('sidebar-target-count'),
+      finishScreen: document.getElementById('finish-screen'),
+      playSection: document.getElementById('play-section'),
+      gameGrid: document.getElementById('game-grid'),
+      chronoPill: document.getElementById('chrono-pill'),
+      bestPill: document.getElementById('best-pill'),
+      finishDetail: document.getElementById('finish-detail'),
+      btnReplay: document.getElementById('btn-replay'),
+      btnReset2: document.getElementById('btn-reset2'),
+    };
+
+    const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+
+    function normCode(str){
+      return (str||"")
+        .toString()
+        .trim()
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu,'')
+        .replace(/[^A-Z0-9]/g,'');
+    }
+
+    function loadState(){
+      try{ return JSON.parse(localStorage.getItem(SETTINGS.storageKey)) || null; }
+      catch(e){ return null; }
+    }
+    function saveState(s){ localStorage.setItem(SETTINGS.storageKey, JSON.stringify(s)); }
+
+    function shuffleInPlace(arr){
+      for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+      return arr;
+    }
+
+    function createRun(){
+      const target = clamp(SETTINGS.roundsTarget, 1, POOL.length);
+      const indices = [...Array(POOL.length).keys()];
+      shuffleInPlace(indices);
+      const seq = indices.slice(0, target);
+      return { seq, i:0, startedAt:null, stepStartedAt:null };
+    }
+
+    let state = loadState() || createRun();
+
+    function msToClock(ms){
+      const t = Math.max(0, Math.floor(ms/1000));
+      const h = Math.floor(t/3600); const m = Math.floor((t%3600)/60); const s = t%60;
+      const pad = n=>String(n).padStart(2,'0');
+      return h>0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    }
+
+    function setProgress(i){
+      const total = state.seq.length;
+      const ratio = clamp(i/total, 0, 1);
+      ui.progressbar.style.width = (ratio*100)+"%";
+      ui.progressInfo.textContent = `Progression : ${Math.round(ratio*100)}%`;
+      ui.stepTotal.textContent = total;
+      ui.stepNum.textContent = clamp(i+1,1,total);
+    }
+
+    function showFinish(){
+      const finishedAt = Date.now();
+      const startedAt = state.startedAt || finishedAt;
+      const elapsed = finishedAt - startedAt;
+      const keyBest = SETTINGS.storageKey + ':best';
+      const prev = Number(localStorage.getItem(keyBest) || 0);
+      if(prev===0 || elapsed < prev){ localStorage.setItem(keyBest, String(elapsed)); }
+      const best = Number(localStorage.getItem(keyBest) || elapsed);
+
+      ui.chronoPill.textContent = '⏱️ Temps : ' + msToClock(elapsed);
+      if(best){ ui.bestPill.style.display = 'inline-block'; ui.bestPill.textContent = '🏁 Record : ' + msToClock(best); }
+      ui.finishDetail.textContent = `Tu as résolu ${state.seq.length} énigmes, Bravo !`;
+
+      // Bascule d'écran
+      ui.gameGrid.style.display = 'none';
+      ui.finishScreen.style.display = 'flex';
+    }
+
+    // ====== Gestion Indice : verrou + compte à rebours ======
+    function setHintButtonLabel(remainingMs){
+      if(remainingMs <= 0){
+        ui.btnHint.textContent = 'Indice';
+        ui.btnHint.title = 'Afficher un indice (débloqué)';
+      } else {
+        const m = Math.floor(remainingMs/60000);
+        const s = Math.floor((remainingMs%60000)/1000);
+        const pad = (n)=>String(n).padStart(2,'0');
+        ui.btnHint.textContent = `Indice (${pad(m)}:${pad(s)})`;
+        ui.btnHint.title = `Indice disponible dans ${m} min ${pad(s)} s`;
+      }
+    }
+    function enableHint(){
+      if(hintTimer){ clearTimeout(hintTimer); hintTimer = null; }
+      if(hintTicker){ clearInterval(hintTicker); hintTicker = null; }
+      ui.btnHint.disabled = false;
+      ui.btnHint.classList.remove('disabled');
+      setHintButtonLabel(0);
+    }
+    function disableHint(remainingMs){
+      ui.btnHint.disabled = true;
+      ui.btnHint.classList.add('disabled');
+      setHintButtonLabel(remainingMs);
+    }
+    function setupHintLock(){
+      if(hintTimer){ clearTimeout(hintTimer); hintTimer = null; }
+      if(hintTicker){ clearInterval(hintTicker); hintTicker = null; }
+
+      const started = state.stepStartedAt || Date.now();
+      const elapsed = Date.now() - started;
+      const remaining = HINT_DELAY_MS - elapsed;
+
+      if(remaining <= 0){
+        enableHint();
+        return;
+      }
+      disableHint(remaining);
+      hintTimer = setTimeout(()=>{ enableHint(); }, remaining);
+
+      let last = remaining;
+      hintTicker = setInterval(()=>{
+        const now = Date.now();
+        const rem = Math.max(0, HINT_DELAY_MS - (now - started));
+        if(rem !== last){
+          disableHint(rem);
+          last = rem;
+        }
+        if(rem <= 0){
+          enableHint();
+        }
+      }, 250);
+    }
+
+    // ====== Sidebar : juste Salle → Personnalité ======
+    function renderSidebarList(){
+      const box = document.getElementById('sidebar-list');
+      if(!box) return;
+      const items = [...POOL].sort((a,b)=>String(a.room).localeCompare(String(b.room),'fr',{numeric:true,sensitivity:'base'}));
+      const html = [
+        '<ul style="list-style:none;margin:0;padding:0;display:grid;gap:10px">',
+        ...items.map(item => `
+          <li class="card" style="padding:12px;border-radius:12px;background:rgba(7,12,25,.55)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+              <span class="pill">Salle ${item.room}</span>
+              <strong>${item.name}</strong>
+            </div>
+          </li>
+        `),
+        '</ul>'
+      ].join('');
+      box.innerHTML = html;
+    }
+
+    function render(){
+      document.title = SETTINGS.title;
+      ui.targetCount.textContent = SETTINGS.roundsTarget;
+
+      const total = state.seq.length;
+      if(state.i >= total){
+        setProgress(total);
+        showFinish();
+        return;
+      }
+
+      if(state.i === 0 && !state.startedAt){
+        state.startedAt = Date.now();
+      }
+
+      const current = POOL[state.seq[state.i]];
+      // (re)lance le chrono de l’énigme courante
+      state.stepStartedAt = Date.now();
+      saveState(state);
+
+      ui.themeLabel.textContent = 'En quête…';
+      ui.riddle.textContent = current.riddle || `Trouve la salle associée à ${current.name} puis saisis le code.`;
+      ui.code.value = '';
+      ui.code.disabled = false; ui.btnValidate.disabled = false;
+
+      // Indice verrouillé puis déverrouillé après 5 minutes avec compte à rebours
+      disableHint(HINT_DELAY_MS);
+      setupHintLock();
+
+      ui.feedback.textContent = '';
+      ui.feedback.className = 'muted';
+      ui.nextClue.style.display = 'none';
+      setProgress(state.i);
+      ui.code.focus();
+    }
+
+    function tryValidate(){
+      const total = state.seq.length;
+      if(state.i >= total) return;
+      const current = POOL[state.seq[state.i]];
+      const val = normCode(ui.code.value);
+      const ok = val && val === normCode(current.code);
+
+      if(ok){
+        ui.feedback.textContent = `Code valide ! (${current.room})`;
+        ui.feedback.className = 'success';
+        ui.nextClue.style.display = 'block';
+        state.i += 1; saveState(state); setProgress(state.i);
+        setTimeout(()=>{ render(); }, 600);
+      } else {
+        ui.feedback.textContent = 'Code incorrect… vérifie bien ce qui est affiché dans la salle.';
+        ui.feedback.className = 'error';
+      }
+    }
+
+    ui.btnValidate.addEventListener('click', tryValidate);
+    ui.code.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ tryValidate(); }});
+
+    ui.btnHint.addEventListener('click', ()=>{
+      const total = state.seq.length; if(state.i >= total) return;
+      if(ui.btnHint.disabled){
+        ui.feedback.textContent = "Patience… l’indice sera disponible après 5 minutes.";
+        ui.feedback.className = 'warn';
+        return;
+      }
+      const current = POOL[state.seq[state.i]];
+      ui.feedback.textContent = current.hint || 'Pas d\'indice pour cette énigme.';
+      ui.feedback.className = 'warn';
+    });
+
+    function resetAndNewRun(){
+      if(hintTimer){ clearTimeout(hintTimer); hintTimer = null; }
+      if(hintTicker){ clearInterval(hintTicker); hintTicker = null; }
+
+      state = createRun();
+      saveState(state);
+      ui.finishScreen.style.display='none';
+      ui.gameGrid.style.display='grid';
+      render();
+    }
+
+    ui.btnReset.addEventListener('click', ()=>{ if(confirm('Réinitialiser la progression du jeu ?')) resetAndNewRun(); });
+    ui.btnReshuffle.addEventListener('click', ()=>{ if(confirm('Nouveau tirage aléatoire ?')) resetAndNewRun(); });
+
+    ui.btnReplay.addEventListener('click', ()=>{ resetAndNewRun(); });
+    ui.btnReset2.addEventListener('click', ()=>{ resetAndNewRun(); });
+
+    // Mode test : Alt + N pour avancer
+    window.addEventListener('keydown', (e)=>{ if(e.altKey && (e.key==='n' || e.key==='N')){ state.i = clamp(state.i+1, 0, state.seq.length); saveState(state); render(); }});
+
+    // Initialisations
+    renderSidebarList();
+    render();
+  </script>
+</body>
+</html>
